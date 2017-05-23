@@ -39,21 +39,38 @@ userRoutes.route('/')
         let password    = req.body.password || null; 
 
         if(!username || username.length < 5) {
-            return 
+            return res.status(422).json({
+                status : 'failed',
+                message : 'invalid username'
+            });
         }
 
+        if(!email || !validateEmail(email)) {
+            return res.status(422).json({
+                status : 'failed',
+                message : 'invalid email'
+            });
+        }
 
+        if(!password || password.length < 5) {
+            return res.status(422).json({
+                status : 'failed',
+                message : 'password too small'
+            });
+        }
 
-        if(req.body.username.length < 8 || req.body.email.length < 15 || req.body.password < 10)
-
-        let post = {
-            username : req.body.username,
-            email : req.body.email,
-            password : req.body.password
+        // sanitize the username sent by client
+        username = validateUsername(username);
+        
+        // construct the user object 
+        let user = {
+            username,
+            email,
+            password        
         };
 
         db.then((connection) => {
-            return connection.query('INSERT INTO users SET ?', post)
+            return connection.query('INSERT INTO users SET ?', user);
         }).then((result) => {
             return res.status(200).json({
                 status : 'success',
@@ -61,6 +78,13 @@ userRoutes.route('/')
             });
         })
         .catch((err) => {
+            if(err.code === 'ER_DUP_ENTRY') {
+                console.log('Duplicate username sent');
+                return res.status(409).json({
+                    status : 'failed',
+                    message : 'username already taken'
+                });
+            }
             console.log(err);
             return res.status(503).json({
                 status : 'failed',

@@ -6,6 +6,6 @@ module.exports = {
         return re.test(email);
     },
     validateUsername : (username) => {
-        return usernames.replace(/[^a-z\d\s]+/gi, "").replace(/ /g,"_");
+        return username.replace(/[^a-z\d\s]+/gi, "").replace(/ /g,"_");
     }
 }
