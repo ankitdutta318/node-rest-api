@@ -20,6 +20,7 @@ const app = express();
 // all the middlewares goes here
 app.use(bodyParser.urlencoded({extended : true}));
 app.use(bodyParser.json());
+// use Morgan to print all the route logs with time taken to serve
 app.use(morgan('dev'));
 
 // routes here 
