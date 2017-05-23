@@ -1,4 +1,10 @@
 {
-    "port-no" : 3000,
-    "node-env" : "development"
+    "port-no"   : 3000,
+    "node-env"  : "development",
+    "db-config" : {
+        "host"      : "localhost",
+        "user"      : "root",
+        "password"  : "",
+        "database"  : "mini-fb"
+    }
 }
