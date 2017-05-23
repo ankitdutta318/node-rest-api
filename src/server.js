@@ -9,6 +9,9 @@ const morgan = require('morgan');
 
 const configs = require('./app/config/config');
 
+// require the routes
+const {userRoutes} = require('./app/routes/users'); // using ES6 destructuring
+
 const port = process.env.PORT || 3000;
 const environment  = process.env.NODE_ENV;
 
@@ -18,6 +21,10 @@ const app = express();
 app.use(bodyParser.urlencoded({extended : true}));
 app.use(bodyParser.json());
 app.use(morgan('dev'));
+
+// routes here 
+
+app.use('/users', userRoutes);
 
 app.listen(port, () => {
     console.log('running at port : ', port);
