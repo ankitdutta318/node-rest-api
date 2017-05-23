@@ -16,5 +16,13 @@
   },
   "devDependencies": {
     "morgan": "^1.8.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/geekankit318/node-rest-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/geekankit318/node-rest-api/issues"
+  },
+  "homepage": "https://github.com/geekankit318/node-rest-api#readme"
 }
