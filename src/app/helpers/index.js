@@ -23,5 +23,21 @@ module.exports = {
             return username;
         }
         return username.replace(/[^a-z\d\s]+/gi, "").replace(/ /g,"-");
+    },
+    
+    /**
+     * Generates a random token for an user
+     * @param  {} 
+     * @returns {string}
+     * 
+     */
+    makeToken : () => {
+        let token = "";
+        let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+        for( let i=0; i < 15; i++ )
+            token += possible.charAt(Math.floor(Math.random() * possible.length));
+
+        return token;
     }
 }

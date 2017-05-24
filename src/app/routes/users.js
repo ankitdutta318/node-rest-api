@@ -4,7 +4,7 @@ const userRoutes = require('express').Router();
 // Require DB connection 
 const {db} = require('../db');
 // require helpers to sanitize username and password
-const {validateEmail, validateUsername } = require('../helpers');
+const {validateEmail, validateUsername, makeToken} = require('../helpers');
 
 userRoutes.route('/')
     .get((req, res) => {
@@ -36,6 +36,7 @@ userRoutes.route('/')
         let username    = req.body.username || null;
         let email       = req.body.email || null;
         let password    = req.body.password || null; 
+        let userToken   = makeToken();
 
         if(!username || username.length < 5) {
             return res.status(422).json({
@@ -65,7 +66,8 @@ userRoutes.route('/')
         let user = {
             username,
             email,
-            password        
+            password,
+            usertoken : userToken
         };
 
         db.then((connection) => {
@@ -125,6 +127,8 @@ userRoutes.route('/:username')
         let emailTC = req.body.email || null;
         let passwordTC =  req.body.password || null;
 
+        let token = req.header('x-token');
+
         let updateFields = [];
 
         if(paramUsername.length < 5) {
@@ -175,7 +179,7 @@ userRoutes.route('/:username')
 
         let updateQuery = 'UPDATE users SET ';
         updateQuery += updateFields.join(', ');
-        updateQuery += `WHERE username = '${paramUsername}'`;
+        updateQuery += `WHERE username = '${paramUsername}' AND usertoken = '${token}'`;
 
         console.log(updateQuery);     
         
@@ -186,6 +190,10 @@ userRoutes.route('/:username')
 
             if(result.changedRows === 0) {
                 console.warn( '**PATCH /users' + req.url + ' : Nothing changed in DB as username does not exists');
+                return res.status(401).json({
+                    status: 'failed',
+                    message: 'invalid username or invalid token'
+                });
             }
 
             return res.status(200).json({
@@ -211,7 +219,8 @@ userRoutes.route('/:username')
 
     // Route to 'DELETE' a particular user from DB
     .delete((req, res) => {
-        let username = validateUser(req.params.username);
+        let username = validateUsername(req.params.username);
+        let token = req.header('x-token');
         if(username.length < 5) {
             res.status().json(422).json({
                 status: 'Failed',
@@ -220,22 +229,28 @@ userRoutes.route('/:username')
         }
 
         db.then((connection) => {
-            return connection.query('DELETE form users WHERE username=?', [username]);
+            return connection.query('DELETE FROM users WHERE username=? AND usertoken=?', [username, token]);
         }).then((result) => {
-            console.log(result);
+            if(result.changedRows === 0) {
+                console.warn( '**DELETE /users' + req.url + ' : Nothing changed in DB as username or token does not exists');
+                return res.status(401).json({
+                    status: 'failed',
+                    message: 'invalid username or invalid token'
+                });
+            }
             res.status(200).json({
                 status: 'success',
                 message: 'User successfully deleted.'
             });
         })
         .catch((err) => {
+            console.log(err);
             return res.status(503).json({
                 status : 'Failed',
                 message : 'Service broken'
             });
         })
     });
-
 
 
 module.exports = {
