@@ -19,6 +19,9 @@ module.exports = {
      * 
      */
     validateUsername : (username) => {
+        if (!username) {
+            return username;
+        }
         return username.replace(/[^a-z\d\s]+/gi, "").replace(/ /g,"-");
     }
 }

@@ -121,11 +121,11 @@ userRoutes.route('/:username')
     // Route to 'UPDATE' an user details
     .patch((req, res) => {
         let paramUsername = validateUsername(req.params.username);
-        let usernameTC = validateUsername(req.body.username) || null;
+        let usernameTC =  req.body.username || null;
         let emailTC = req.body.email || null;
         let passwordTC =  req.body.password || null;
 
-        let updateFields = {};
+        let updateFields = [];
 
         if(paramUsername.length < 5) {
             return res.status(422).json({
@@ -134,42 +134,60 @@ userRoutes.route('/:username')
             });
         }
         
-        if(usernameTC.length < 5) {
-            return res.status(422).json({
-                status : 'failed',
-                message : 'invalid username or username too small.'
-            });
+        if(usernameTC){
+            if(validateUsername(usernameTC).length < 5) {
+                    return res.status(422).json({
+                    status : 'failed',
+                    message : 'invalid username or username too small.'
+                });
+            }
+            updateFields.push(`username = '${usernameTC}'`);   
         }   
-        if(!emailTC || !validateEmail(emailTC)) {
-            return res.status(422).json({
-                status: 'Failed',
-                message: 'Invalid email.'
-            });
-        }      
+
+        if(emailTC) {
+            if(!emailTC || !validateEmail(emailTC)) {
+                return res.status(422).json({
+                    status: 'Failed',
+                    message: 'Invalid email.'
+                });
+            }
+            updateFields.push(`email = '${emailTC}'`);
+        }
+        
+        if(passwordTC) {
         if(passwordTC.length < 5) {
             return res.status(422).json({
                 status : 'failed',
                 message : 'password too small.'
             });
         } 
+        updateFields.push(`password = '${passwordTC}'`);
+        }              
 
-        updateFields.username = usernameTC;
-        updateFields.email = emailTC;
-        updateFields.password = passwordTC;
-        
+        console.log(updateFields);
         // If request contains nothing to update
-        if(Object.keys(updateFields).length === 0 && updateFields.constructor === Object) {
+        if(updateFields.length < 1) {
             return res.status(200).json({
                 status : 'success',
                 message : 'nothing to update.'
             });
         }
+
+        let updateQuery = 'UPDATE users SET ';
+        updateQuery += updateFields.join(', ');
+        updateQuery += `WHERE username = '${paramUsername}'`;
+
+        console.log(updateQuery);     
         
         db.then((connection) => {
-            return connection.query('UPDATE users SET username = ?, email = ?, password = ? WHERE username = ?', [updateFields.username, updateFields.email, updateFields.password, paramUsername]);
+            return connection.query(updateQuery);
         }).then(function (result){
-            console.log(process(result));
-            console.log(result);
+            //console.log(result);
+
+            if(result.changedRows === 0) {
+                console.warn( '**PATCH /users' + req.url + ' : Nothing changed in DB as username does not exists');
+            }
+
             return res.status(200).json({
                 status: 'success',
                 message: 'user details successfully updated.'
