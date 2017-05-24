@@ -93,6 +93,7 @@ userRoutes.route('/')
     });
 
 userRoutes.route('/:username')
+    // Route to 'GET' an user details
     .get((req, res) => {
         db.then((connection) => {
             return connection.query('SELECT * FROM users where username = ?', [req.params.username]);
@@ -116,39 +117,97 @@ userRoutes.route('/:username')
             });
         }); 
     })
+
+    // Route to 'UPDATE' an user details
     .patch((req, res) => {
-        let username = req.params.username || null;
-        let email = req.params.email || null;
-        let password =  req.params.password || null;
+        let username = validateUsername(req.body.username) || null;
+        let email = req.body.email || null;
+        let password =  req.body.password || null;
 
-        let updateField = {};
-        var username = validateUsername(username);
+        let updateFields = {};
         
-        if(username && username > 5)    updateField.username    = username;
-        if(email || null)       updateField.email       = email;
-        if(password || null)    updateField.password    = password;
+        if(username.length > 5) {
+            updateFields.username = username;
+        } else {
+            return res.status(422).json({
+                status : 'Failed',
+                message : 'Invalid username or username too small.'
+            });
+        } 
+        if(email && validateEmail(email)) {
+            updateFields.email = email;
+        } else {
+            return res.status(422).json({
+                status: 'Failed',
+                message: 'Invalid email.'
+            }); 
+        }     
+        if(password.length >= 5) {
+            updateFields.password = password;
+        } else {
+            return res.status(422).json({
+                status : 'Failed',
+                message : 'password too small.'
+            });
+        }
+        
+        // If request contains nothing to update
+        if(Object.keys(updateFields).length === 0 && updateFields.constructor === Object) {
+            return res.status(200).json({
+                status : 'success',
+                message : 'Nothing to update.'
+            });
+        }
+        
         db.then((connection) => {
-
-
-            if(updateField == null) {
-                return res.status(200).json({
-                    status : 'success',
-                    message : 'Nothing to update.'
-                });
-            } else {
-                return connection.query('');
-            }   
+            return connection.query('UPDATE users SET username = ?, email = ?, password = ? WHERE username = ?', [username, email, password, req.params.username]);
+        }).then((result) => {
+            return res.status(200).json({
+                status: 'success',
+                message: 'User details successfully updated.'
+            });
         })
-        res.status(200).json({
-            status: 'success',
-            message: 'ok'
-        });
+        .catch((err) => {
+            if(err.code === 'ER_DUP_ENTRY') {
+                console.log('Duplicate username sent');
+                return res.status(409).json({
+                    status : 'failed',
+                    message : 'username already taken.'
+                });
+            }
+            console.log(err);
+            return res.status(503).json({
+                status : 'Failed',
+                message : 'Service broken'
+            });
+        });   
     })
+
+    // Route to 'DELETE' a particular user from DB
     .delete((req, res) => {
-        res.status(200).json({
-            status: 'success',
-            message: 'ok'
-        });
+        let username = validateUser(req.params.username);
+        if(username.length < 5) {
+            res.status().json(422).json({
+                status: 'Failed',
+                message: 'Invalid username.'
+            });
+        }
+
+        db.then((connection) => {
+            return connection.query('DELETE form users WHERE username=?', [username]);
+        }).then((result) => {
+            console.log(result);
+            res.status(200).json({
+                status: 'success',
+                message: 'User successfully deleted.'
+            });
+        })
+        .catch((err) => {
+            return res.status(503).json({
+                status : 'Failed',
+                message : 'Service broken'
+            });
+        })
     });
 
 
