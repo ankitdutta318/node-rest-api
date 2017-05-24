@@ -5,6 +5,7 @@
         "host"      : "localhost",
         "user"      : "root",
         "password"  : "",
-        "database"  : "mini-fb"
+        "database"  : "mini-fb",
+        "debug" : ["ComQueryPacket", "RowDataPacket"]
     }
 }

@@ -120,56 +120,64 @@ userRoutes.route('/:username')
 
     // Route to 'UPDATE' an user details
     .patch((req, res) => {
-        let username = validateUsername(req.body.username) || null;
-        let email = req.body.email || null;
-        let password =  req.body.password || null;
+        let paramUsername = validateUsername(req.params.username);
+        let usernameTC = validateUsername(req.body.username) || null;
+        let emailTC = req.body.email || null;
+        let passwordTC =  req.body.password || null;
 
         let updateFields = {};
-        
-        if(username.length > 5) {
-            updateFields.username = username;
-        } else {
+
+        if(paramUsername.length < 5) {
             return res.status(422).json({
-                status : 'Failed',
-                message : 'Invalid username or username too small.'
+                status: 'failed',
+                message: 'username too small'
             });
-        } 
-        if(email && validateEmail(email)) {
-            updateFields.email = email;
-        } else {
+        }
+        
+        if(usernameTC.length < 5) {
+            return res.status(422).json({
+                status : 'failed',
+                message : 'invalid username or username too small.'
+            });
+        }   
+        if(!emailTC || !validateEmail(emailTC)) {
             return res.status(422).json({
                 status: 'Failed',
                 message: 'Invalid email.'
-            }); 
-        }     
-        if(password.length >= 5) {
-            updateFields.password = password;
-        } else {
+            });
+        }      
+        if(passwordTC.length < 5) {
             return res.status(422).json({
-                status : 'Failed',
+                status : 'failed',
                 message : 'password too small.'
             });
-        }
+        } 
+
+        updateFields.username = usernameTC;
+        updateFields.email = emailTC;
+        updateFields.password = passwordTC;
         
         // If request contains nothing to update
         if(Object.keys(updateFields).length === 0 && updateFields.constructor === Object) {
             return res.status(200).json({
                 status : 'success',
-                message : 'Nothing to update.'
+                message : 'nothing to update.'
             });
         }
         
         db.then((connection) => {
-            return connection.query('UPDATE users SET username = ?, email = ?, password = ? WHERE username = ?', [username, email, password, req.params.username]);
-        }).then((result) => {
+            return connection.query('UPDATE users SET username = ?, email = ?, password = ? WHERE username = ?', [updateFields.username, updateFields.email, updateFields.password, paramUsername]);
+        }).then(function (result){
+            console.log(process(result));
+            console.log(result);
             return res.status(200).json({
                 status: 'success',
-                message: 'User details successfully updated.'
+                message: 'user details successfully updated.'
             });
         })
         .catch((err) => {
             if(err.code === 'ER_DUP_ENTRY') {
-                console.log('Duplicate username sent');
+                console.log('duplicate username sent');
                 return res.status(409).json({
                     status : 'failed',
                     message : 'username already taken.'
