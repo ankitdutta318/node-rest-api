@@ -28,8 +28,7 @@ userRoutes.route('/')
                 status : 'failed',
                 message : 'service broken'
             });
-        });
-                
+        });    
     })
     .post((req, res) => {
 
@@ -95,12 +94,51 @@ userRoutes.route('/')
 
 userRoutes.route('/:username')
     .get((req, res) => {
-        res.status(200).json({
-            status: 'success',
-            message: 'ok'
-        });
+        db.then((connection) => {
+            return connection.query('SELECT * FROM users where username = ?', [req.params.username]);
+        }).then((result) => {
+            if(result.length < 1) {
+                return res.status(404).json({
+                    status : 'failed',
+                    message : 'user not found'
+                });
+            }
+            return res.status(200).json({
+                status : 'success',
+                data : result
+            });
+        })
+        .catch((err) => {
+            console.log(err);
+            return res.status(503).json({
+                status : 'failed',
+                message : 'service broken'
+            });
+        }); 
     })
     .patch((req, res) => {
+        let username = req.params.username || null;
+        let email = req.params.email || null;
+        let password =  req.params.password || null;
+
+        let updateField = {};
+        var username = validateUsername(username);
+        
+        if(username && username > 5)    updateField.username    = username;
+        if(email || null)       updateField.email       = email;
+        if(password || null)    updateField.password    = password;
+        db.then((connection) => {
+
+
+            if(updateField == null) {
+                return res.status(200).json({
+                    status : 'success',
+                    message : 'Nothing to update.'
+                });
+            } else {
+                return connection.query('');
+            }   
+        })
         res.status(200).json({
             status: 'success',
             message: 'ok'
