@@ -13,6 +13,8 @@ const configs = require('./app/config/config');
 const {userRoutes} = require('./app/routes/users'); // using ES6 destructuring
 const {loginRoutes} = require('./app/routes/login'); // using ES6 destructuring
 
+const isValidToken = require('./app/middlewares/validateToken').validateToken;
+
 const port = process.env.PORT || 3000;
 const environment  = process.env.NODE_ENV;
 
@@ -26,7 +28,7 @@ app.use(morgan('dev'));
 
 // routes here 
 
-app.use('/users', userRoutes);
+app.use('/users', isValidToken, userRoutes);
 app.use('/login', loginRoutes);
 
 app.listen(port, () => {

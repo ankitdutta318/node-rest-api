@@ -2,6 +2,7 @@
 
 const loginRoutes = require('express').Router();
 const {db} = require('../db');
+const randomString = require('randomstring');
 const bcrypt = require('bcryptjs');
 const {validateEmail, validateUsername, makeToken} = require('../helpers');
 
@@ -28,10 +29,12 @@ loginRoutes.route('/')
 
         // Sanitize username
         username = validateUsername(username);
+        let conn = null;
         let token = null;
 
         // Get data from DB
         db.then((connection) => {
+            conn = connection;
             return connection.query('SELECT username, usertoken, password FROM users WHERE username= ?', [username]);
         })
         .then((result) => {
@@ -43,27 +46,33 @@ loginRoutes.route('/')
                 });
             }
 
-            // store token 
-            token = result[0].usertoken;
-
             // comparing password             
             return bcrypt.compare(password, result[0].password);
         })
         .then((isValidPass) => {
-            if(isValidPass) {
-                res.setHeader('x-token', token);
-                return res.status(200).json({
-                    status: 'success',
-                    message: 'login successful'
-                });
-            }
-            else {
+            if(!isValidPass) {
                 console.log('Password Did Not Matched');  
                 return res.status(401).json({
                     status: 'failed',
                     message: 'invalid password'
-                });          
+                }); 
             }
+            
+            // create a new token 
+            token = randomString.generate(40);
+
+            // insert the token in the token DB
+            conn.query('INSERT INTO tokens SET ?', {
+                username,
+                token
+            });
+            
+            // send success response with token in the heder of response
+            res.setHeader('x-token', token);
+            return res.status(200).json({
+                status: 'success',
+                message: 'login successful'
+            });  
         })
         .catch((err) => {
             console.log(err);
