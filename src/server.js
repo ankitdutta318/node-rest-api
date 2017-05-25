@@ -30,6 +30,7 @@ app.use(morgan('dev'));
 
 app.use('/users', isValidToken, userRoutes);
 app.use('/login', loginRoutes);
+app.use('/register', registerRoutes);
 
 app.listen(port, () => {
     console.log('running at port : ', port);
