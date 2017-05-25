@@ -1,9 +1,9 @@
 'use strict';
 
-const registerRoutes = require('express').Router(); 
-const bcrypt = require('bcryptjs');
+const registerRoutes    = require('express').Router(); 
+const bcrypt            = require('bcryptjs');
 // Require DB connection
-const {db} = require('../db');
+const {db}              = require('../db');
 // Require validation file
 const {validateUsername, validateEmail, makeToken} = require('../helpers');
 
@@ -11,7 +11,21 @@ registerRoutes.route('/')
     .post((req, res) => {
         
         // catch all the form data here 
-        let username    = req.body.username || null;
+        let fname    = req.body.fname || null;
+        let lname    = req.body.lname || null;
+        let username = fname + '-' + lname;
+
+        db
+        .then((connection) => {
+            return connection.query('SELECT COUNT(*) AS name_count FROM users WHERE f_name = ? AND l_name = ?', [fname, lname]);
+        })
+        .then((result) => {
+            if(result[0].name_count) {
+                return username += ('-' + result[0].name_count);
+            }
+        });
+
+        console.log(username);
         let email       = req.body.email || null;
         let password    = req.body.password || null; 
         let userToken   = makeToken();
@@ -37,11 +51,6 @@ registerRoutes.route('/')
             });
         }
 
-        // sanitize the username sent by client
-        username = validateUsername(username);
-        
-        
-
         // hash the password 
         bcrypt.genSalt(10)
         .then((salt) => {
@@ -51,6 +60,8 @@ registerRoutes.route('/')
             // construct the user object 
             let user = {
                 username,
+                f_name: fname,
+                l_name: lname,
                 email,
                 password : hashedPassword,
                 usertoken : userToken
@@ -66,14 +77,14 @@ registerRoutes.route('/')
                 });
             })
             .catch((err) => {
+                console.log(err);
                 if(err.code === 'ER_DUP_ENTRY') {
-                    console.log('Duplicate username sent');
                     return res.status(409).json({
                         status : 'failed',
-                        message : 'username already taken'
+                        message : 'email already in use'
                     });
                 }
-                console.log(err);
+                
                 return res.status(503).json({
                     status : 'failed',
                     message : 'service broken'

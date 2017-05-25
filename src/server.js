@@ -12,6 +12,7 @@ const configs = require('./app/config/config');
 // require the routes
 const {userRoutes} = require('./app/routes/users'); // using ES6 destructuring
 const {loginRoutes} = require('./app/routes/login'); // using ES6 destructuring
+const {registerRoutes} = require('./app/routes/register');  // using ES6 destructuring
 
 const isValidToken = require('./app/middlewares/validateToken').validateToken;
 
