@@ -60,6 +60,7 @@ loginRoutes.route('/')
             
             // create a new token 
             token = randomString.generate(40);
+            res.setHeader('x-token', token);            
 
             // insert the token in the token DB
             conn.query('INSERT INTO tokens SET ?', {
@@ -68,7 +69,6 @@ loginRoutes.route('/')
             });
             
             // send success response with token in the heder of response
-            res.setHeader('x-token', token);
             return res.status(200).json({
                 status: 'success',
                 message: 'login successful'
@@ -82,7 +82,7 @@ loginRoutes.route('/')
             });
         })
         
-    })
+    });
 
 
 module.exports = {

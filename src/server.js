@@ -6,7 +6,6 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 
 // require the config file
-
 const configs = require('./app/config/config');
 
 // require the routes

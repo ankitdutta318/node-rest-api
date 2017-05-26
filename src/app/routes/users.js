@@ -166,6 +166,8 @@ userRoutes.route('/:username')
             });
         }
 
+       
+
         db.then((connection) => {
             return connection.query('DELETE FROM users WHERE username=? AND usertoken=?', [username, token]);
         }).then((result) => {
