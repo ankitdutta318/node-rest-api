@@ -7,6 +7,8 @@ const {db} = require('../db');
 // require helpers to sanitize username and password
 const {validateEmail, validateUsername, makeToken} = require('../helpers');
 
+let conn = null;
+
 userRoutes.route('/')
     .get((req, res) => {
         db.then((connection) => {
@@ -60,10 +62,11 @@ userRoutes.route('/:username')
 
     // Route to 'UPDATE' an user details
     .patch((req, res) => {
-        let paramUsername = validateUsername(req.params.username);
-        let usernameTC =  req.body.username || null;
-        let emailTC = req.body.email || null;
-        let passwordTC =  req.body.password || null;
+        let paramUsername = req.params.username;
+        let newUsername =  req.body.username || null;
+        let newEmail = req.body.email || null;
+        let newPassword =  req.body.password || null;
+        let conn = null;
 
         let token = req.header('x-token');
 
@@ -76,34 +79,34 @@ userRoutes.route('/:username')
             });
         }
         
-        if(usernameTC){
-            if(validateUsername(usernameTC).length < 5) {
+        if(newUsername){
+            if(validateUsername(newUsername).length < 5) {
                     return res.status(422).json({
                     status : 'failed',
                     message : 'invalid username or username too small.'
                 });
             }
-            updateFields.push(`username = '${usernameTC}'`);   
+            updateFields.push(`username = '${newUsername}'`);   
         }   
 
-        if(emailTC) {
-            if(!emailTC || !validateEmail(emailTC)) {
+        if(newEmail) {
+            if(!newEmail || !validateEmail(newEmail)) {
                 return res.status(422).json({
                     status: 'Failed',
                     message: 'Invalid email.'
                 });
             }
-            updateFields.push(`email = '${emailTC}'`);
+            updateFields.push(`email = '${newEmail}'`);
         }
         
-        if(passwordTC) {
-        if(passwordTC.length < 5) {
+        if(newPassword) {
+        if(newPassword.length < 5) {
             return res.status(422).json({
                 status : 'failed',
                 message : 'password too small.'
             });
         } 
-        updateFields.push(`password = '${passwordTC}'`);
+        updateFields.push(`password = '${newPassword}'`);
         }              
 
         console.log(updateFields);
@@ -115,22 +118,36 @@ userRoutes.route('/:username')
             });
         }
 
+        let authenticatedUser = null;
         let updateQuery = 'UPDATE users SET ';
         updateQuery += updateFields.join(', ');
-        updateQuery += `WHERE username = '${paramUsername}' AND usertoken = '${token}'`;
+        updateQuery += `WHERE username = '${paramUsername}'`;
 
         console.log(updateQuery);     
         
         db.then((connection) => {
+            conn = connection;
+            conn.query('SELECT * FROM tokens WHERE token = ? ', [token])
+            .then((result) => {
+                if(result[0].username != paramUsername) {
+                    authenticatedUser = false;
+                }
+            });
+            
             return connection.query(updateQuery);
-        }).then(function (result){
+        }).then((result) => {
             //console.log(result);
-
+            if(!authenticatedUser) {
+                return res.status(401).json({
+                    status: 'failed',
+                    message: 'not authorized to change user details'
+                });
+            }
             if(result.changedRows === 0) {
                 console.warn( '**PATCH /users' + req.url + ' : Nothing changed in DB as username does not exists');
                 return res.status(401).json({
                     status: 'failed',
-                    message: 'invalid username or invalid token'
+                    message: 'nothing to update'
                 });
             }
 

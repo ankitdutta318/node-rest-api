@@ -5,7 +5,7 @@ const bcrypt            = require('bcryptjs');
 // Require DB connection
 const {db}              = require('../db');
 // Require validation file
-const {validateUsername, validateEmail, makeToken} = require('../helpers');
+const {validateEmail, makeToken} = require('../helpers');
 
 registerRoutes.route('/')
     .post((req, res) => {

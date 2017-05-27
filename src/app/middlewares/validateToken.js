@@ -2,10 +2,13 @@ const {db} = require('../db');
 
 module.exports = {
     validateToken : (req, res, next) => {
+        let username = null;
         let token = req.header('x-token');
+        let conn = null;
 
         db.then((connection) => {
-            return connection.query('SELECT timestamp FROM tokens WHERE token = ?', [token]);
+            conn = connection;
+            return connection.query('SELECT username, timestamp FROM tokens WHERE token = ?', [token]);
         }).then((result) => {
             if(result.length < 1) {
                 return res.status(401).json({
@@ -17,8 +20,10 @@ module.exports = {
             // validate time of token 
             let tokenCreationTime = result[0].timestamp;
             let currentTime = Date.now();
+            username = result[0].username;
 
-            if(currentTime - tokenCreationTime >= (1000 * 60 * 45)) {
+            if(currentTime - tokenCreationTime >= (1000 * 60)) {
+                conn.query('DELETE FROM tokens WHERE timestamp = ? AND username = ?', [tokenCreationTime, username]);
                 return res.status(401).json({
                     status : 'failed',
                     message : 'token expired'
